@@ -70,19 +70,33 @@ export class PollingSync implements ISyncStrategy {
       const changes: FileChangeEvent[] = [];
 
       for (const item of response.value) {
+        // Extract relative path from parentReference
+        let relativePath = item.name;
+        if (item.parentReference?.path) {
+          // parentReference.path format: /drive/root:/RootFolder/SubFolder
+          const rootMarker = `:${this.rootPath}`;
+          const idx = item.parentReference.path.indexOf(rootMarker);
+          if (idx !== -1) {
+            const parentPath = item.parentReference.path.substring(idx + rootMarker.length);
+            if (parentPath && parentPath !== '/') {
+              relativePath = `${parentPath.substring(1)}/${item.name}`;
+            }
+          }
+        }
+
         if (item.deleted) {
           changes.push({
             type: 'deleted',
-            path: item.name
+            path: relativePath
           });
         } else if (item.file) {
           // Determine if created or updated based on presence in cache
           // For now, treat all as updated
           changes.push({
             type: 'updated',
-            path: item.name,
+            path: relativePath,
             metadata: {
-              path: item.name,
+              path: relativePath,
               name: item.name,
               size: item.size,
               modified: new Date(item.lastModifiedDateTime),

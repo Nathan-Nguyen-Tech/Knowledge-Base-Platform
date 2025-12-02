@@ -258,23 +258,33 @@ export class OneDriveStorageAdapter implements IStorageAdapter {
   }
 
   // Private helper methods
-  private async fetchAllFilesFromOneDrive(): Promise<GenericFileMetadata[]> {
+  private async fetchAllFilesFromOneDrive(subPath: string = ''): Promise<GenericFileMetadata[]> {
     const files: GenericFileMetadata[] = [];
-    const folderUrl = `/users/${this.config.userId}/drive/root:${this.config.rootFolderPath}:/children`;
+    const fullPath = subPath
+      ? `${this.config.rootFolderPath}/${subPath}`
+      : this.config.rootFolderPath;
+    const folderUrl = `/users/${this.config.userId}/drive/root:${fullPath}:/children`;
 
     try {
       let response = await this.graphClient.api(folderUrl).get();
 
       while (response) {
         for (const item of response.value) {
-          if (item.file) {  // Only files, not folders
+          if (item.file) {
+            // It's a file - add with full relative path
+            const relativePath = subPath ? `${subPath}/${item.name}` : item.name;
             files.push({
-              path: item.name,
+              path: relativePath,
               name: item.name,
               size: item.size,
               modified: new Date(item.lastModifiedDateTime),
               mimeType: item.file.mimeType || 'application/octet-stream'
             });
+          } else if (item.folder) {
+            // It's a folder - recursively scan
+            const folderSubPath = subPath ? `${subPath}/${item.name}` : item.name;
+            const subFiles = await this.fetchAllFilesFromOneDrive(folderSubPath);
+            files.push(...subFiles);
           }
         }
 
@@ -286,7 +296,7 @@ export class OneDriveStorageAdapter implements IStorageAdapter {
         }
       }
     } catch (error) {
-      console.error('[OneDrive] Error fetching files:', error);
+      console.error(`[OneDrive] Error fetching files from ${fullPath}:`, error);
       throw error;
     }
 
