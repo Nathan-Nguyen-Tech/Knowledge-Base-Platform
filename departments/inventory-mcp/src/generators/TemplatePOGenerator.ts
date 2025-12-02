@@ -27,19 +27,20 @@ export interface TemplatePOOptions {
 
 /**
  * Placeholder mapping from template to PO data fields
+ * Using non-diacritical placeholders to avoid encoding issues
  */
 const METADATA_MAPPING: Record<string, keyof POMeta | 'createdDateFormatted'> = {
-  '{Ngày lập}': 'createdDateFormatted',
-  '{Người đề nghị}': 'requestedBy',
-  '{Bộ phận}': 'department'
+  '{Ngaylap}': 'createdDateFormatted',
+  '{Nguoidenghi}': 'requestedBy',
+  '{Bophan}': 'department'
 };
 
 const LINE_ITEM_MAPPING: Record<string, keyof POLineItem | 'specification'> = {
-  '{STT}': 'stt',
-  '{Tên sản phẩm}': 'productName',
-  '{Quy cách}': 'specification',
-  '{Số lượng}': 'quantity',
-  '{Đơn vị tính}': 'unit'
+  '{Sothutu}': 'stt',
+  '{Tensanpham}': 'productName',
+  '{Quycach}': 'specification',
+  '{Soluongd}': 'quantity',
+  '{donvi}': 'unit'
 };
 
 /**
@@ -63,8 +64,8 @@ function parseTemplatePlaceholders(worksheet: ExcelJS.Worksheet): TemplateParseR
 
       if (matches) {
         for (const match of matches) {
-          // Check if this is a line item placeholder (contains {STT})
-          if (match === '{STT}') {
+          // Check if this is a line item placeholder (contains {Sothutu})
+          if (match === '{Sothutu}') {
             lineItemRow = rowNumber;
           }
 
@@ -85,7 +86,7 @@ function parseTemplatePlaceholders(worksheet: ExcelJS.Worksheet): TemplateParseR
   });
 
   if (lineItemRow === -1) {
-    throw new Error('Template does not contain line item row (missing {STT} placeholder)');
+    throw new Error('Template does not contain line item row (missing {Sothutu} placeholder)');
   }
 
   return {
@@ -110,9 +111,9 @@ function replaceMetadataPlaceholders(
   const createdDateFormatted = meta.createdDate.toLocaleDateString('vi-VN');
 
   const metadataValues: Record<string, string> = {
-    '{Ngày lập}': createdDateFormatted,
-    '{Người đề nghị}': meta.requestedBy || '',
-    '{Bộ phận}': meta.department || ''
+    '{Ngaylap}': createdDateFormatted,
+    '{Nguoidenghi}': meta.requestedBy || '',
+    '{Bophan}': meta.department || ''
   };
 
   for (const [placeholder, location] of metadataCells) {
@@ -139,15 +140,15 @@ function copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell): void {
  */
 function getLineItemValue(placeholder: string, item: POLineItem): string | number {
   switch (placeholder) {
-    case '{STT}':
+    case '{Sothutu}':
       return item.stt;
-    case '{Tên sản phẩm}':
+    case '{Tensanpham}':
       return item.productName;
-    case '{Quy cách}':
+    case '{Quycach}':
       return item.notes || ''; // Using notes for specification/quy cách
-    case '{Số lượng}':
+    case '{Soluongd}':
       return item.quantity;
-    case '{Đơn vị tính}':
+    case '{donvi}':
       return item.unit;
     default:
       return '';

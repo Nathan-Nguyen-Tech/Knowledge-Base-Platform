@@ -31,7 +31,7 @@ console.log('🧪 TEST: Full Process Workflow');
 console.log('='.repeat(80));
 console.log('');
 console.log('📋 Test Configuration:');
-console.log(`   - Customers: 100`);
+console.log(`   - Customers: 150`);
 console.log(`   - Package: basic (Gói đồng)`);
 console.log(`   - Include Supplements: Yes`);
 console.log(`   - Save to OneDrive: Yes`);
@@ -41,12 +41,13 @@ console.log('');
 // Test parameters
 const testInput = {
   workflow: 'full_process',
-  numCustomers: 100,
+  numCustomers: 150,
   servicePackage: 'basic',
   masterDataFile: 'MasterData/Master_Data.xlsx',
   inventoryFile: 'CurrentInventory/Inventory.xlsx',
   includeSupplements: true,
-  saveToOneDrive: true
+  saveToOneDrive: true,
+  outputPath: `PurchaseOrders/PO-150customers-${Date.now()}.xlsx`
 };
 
 console.log('📄 Input Parameters:');
@@ -91,6 +92,9 @@ try {
     auth
   );
 
+  // Initialize the storage adapter (authenticates and sets up graphClient)
+  await storage.initialize();
+
   console.log('✅ Initialization complete!');
   console.log('');
   console.log('='.repeat(80));
@@ -98,8 +102,8 @@ try {
   console.log('='.repeat(80));
   console.log('');
 
-  // Execute workflow
-  const result = await processWarehouseRequest(testInput, storage);
+  // Execute workflow (storage first, then input)
+  const result = await processWarehouseRequest(storage, testInput);
 
   console.log('');
   console.log('='.repeat(80));
@@ -114,7 +118,7 @@ try {
   console.log('');
 
   // Cleanup
-  await cache.close();
+  await storage.dispose();
 
   console.log('✅ Test completed successfully!');
   process.exit(0);
