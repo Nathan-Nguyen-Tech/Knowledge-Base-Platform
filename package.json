@@ -7,6 +7,9 @@
     "packages/*",
     "departments/*"
   ],
+  "pnpm": {
+    "onlyBuiltDependencies": ["sqlite3", "esbuild"]
+  },
   "scripts": {
     "build": "npm run build --workspaces",
     "dev": "npm run dev --workspaces --if-present",
