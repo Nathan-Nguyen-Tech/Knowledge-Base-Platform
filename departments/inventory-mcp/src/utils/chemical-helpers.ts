@@ -3,7 +3,7 @@
  * Các hàm hỗ trợ cho logic hóa chất
  */
 
-import { containsAnyKeyword } from './name-normalizer.js';
+import { containsAnyKeyword, findBestMatch } from './name-normalizer.js';
 
 /**
  * Keywords to skip QC/CALIB
@@ -86,27 +86,28 @@ export interface QcCalibSupplement {
   name: string;
   quantity: number;
   unit: string;
+  specification?: string;  // Quy cách (từ Master Data)
   condition?: (chemicals: string[]) => boolean;
 }
 
 export const QC_CALIB_SUPPLEMENTS: QcCalibSupplement[] = [
   {
-    name: 'ERBA PATH',
+    name: 'ERBA PATH',  // Matches Master Data exactly
     quantity: 2,
     unit: 'vial'
   },
   {
-    name: 'ERBA NORM Level-2',
+    name: 'ERBA NORM (Control Level-2)',  // Updated to match Master Data
     quantity: 2,
     unit: 'vial'
   },
   {
-    name: 'XL MULTICAL 4×3ml',
+    name: 'XL MULTICAL-Calib chung cho hóa chất',  // Updated to match Master Data
     quantity: 2,
     unit: 'vial'
   },
   {
-    name: 'HDL/LDL Cal',
+    name: 'HDL/LDL Cal',  // Matches Master Data exactly
     quantity: 1,
     unit: 'vial',
     condition: (chemicals: string[]) => {
@@ -128,5 +129,50 @@ export function getApplicableSupplements(chemicals: string[]): QcCalibSupplement
       return supplement.condition(chemicals);
     }
     return true;
+  });
+}
+
+/**
+ * Chemical data interface for lookup (simplified)
+ */
+export interface ChemicalLookupData {
+  testName: string;
+  specification?: string;
+  largeUnit?: string;  // Đơn vị lớn (Hộp, Thùng, etc.)
+}
+
+/**
+ * Enrich supplements with data from Master Data (Hoa Chat Chi Tiet)
+ * Looks up each supplement name in the chemical data to get specification and unit
+ *
+ * @param supplements - Applicable supplements
+ * @param chemicalData - Parsed chemical data from Master Data
+ * @returns Enriched supplements with specification and proper unit
+ */
+export function enrichSupplementsWithChemicalData(
+  supplements: QcCalibSupplement[],
+  chemicalData: ChemicalLookupData[]
+): QcCalibSupplement[] {
+  return supplements.map(supplement => {
+    // Try to find matching chemical in Master Data
+    const allNames = chemicalData.map(c => c.testName);
+    const match = findBestMatch(supplement.name, allNames, 70);  // Lower threshold for supplements
+
+    if (match) {
+      const matchedChemical = chemicalData.find(c => c.testName === match.match);
+      if (matchedChemical) {
+        console.error(
+          `[Supplement] Enriched '${supplement.name}' → '${match.match}' (${match.similarity}%)`
+        );
+        return {
+          ...supplement,
+          specification: matchedChemical.specification,
+          unit: matchedChemical.largeUnit || supplement.unit  // Use largeUnit from Master Data if available
+        };
+      }
+    }
+
+    console.error(`[Supplement] No match found for '${supplement.name}', keeping defaults`);
+    return supplement;
   });
 }

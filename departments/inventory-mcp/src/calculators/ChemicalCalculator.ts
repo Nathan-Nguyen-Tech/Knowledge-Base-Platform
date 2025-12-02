@@ -13,7 +13,9 @@ import {
 } from '../models/ChemicalItem.js';
 import {
   QcCalibSupplement,
-  getApplicableSupplements
+  getApplicableSupplements,
+  enrichSupplementsWithChemicalData,
+  ChemicalLookupData
 } from '../utils/chemical-helpers.js';
 
 /**
@@ -41,6 +43,7 @@ export interface SupplementRequirement {
   name: string;
   quantity: number;
   unit: string;
+  specification?: string;  // Quy cách (từ Master Data)
 }
 
 /**
@@ -122,15 +125,26 @@ export async function calculateChemicalRequirements(
     const chemicalNames = relevantChemicals.map(c => c.data.testName);
     const applicableSupplements = getApplicableSupplements(chemicalNames);
 
-    for (const supplement of applicableSupplements) {
+    // Convert primaryData to ChemicalLookupData for enrichment
+    const lookupData: ChemicalLookupData[] = primaryData.map(p => ({
+      testName: p.testName,
+      specification: p.specification,
+      largeUnit: 'Hộp'  // Default unit for chemicals, can be overridden by getChemicalUnit logic
+    }));
+
+    // Enrich supplements with specification and unit from Master Data
+    const enrichedSupplements = enrichSupplementsWithChemicalData(applicableSupplements, lookupData);
+
+    for (const supplement of enrichedSupplements) {
       supplements.push({
         name: supplement.name,
         quantity: supplement.quantity,
-        unit: supplement.unit
+        unit: supplement.unit,
+        specification: supplement.specification
       });
     }
 
-    console.error(`[Chemical Calculator] Added ${supplements.length} supplements`);
+    console.error(`[Chemical Calculator] Added ${supplements.length} supplements (enriched with Master Data)`);
   }
 
   return {

@@ -54,6 +54,7 @@ export interface ChemicalComparison {
  */
 export interface SupplementComparison {
   name: string;
+  specification?: string;  // Quy cách (từ Master Data)
   required: number;
   inventory: number;
   shortage: number;
@@ -324,6 +325,7 @@ export async function compareSupplementsWithInventory(
 
       comparisons.push({
         name: supp.name,
+        specification: supp.specification,
         required: supp.quantity,
         inventory: inventoryQuantity,
         shortage,
@@ -336,6 +338,7 @@ export async function compareSupplementsWithInventory(
       // Not found
       comparisons.push({
         name: supp.name,
+        specification: supp.specification,
         required: supp.quantity,
         inventory: 0,
         shortage: supp.quantity,

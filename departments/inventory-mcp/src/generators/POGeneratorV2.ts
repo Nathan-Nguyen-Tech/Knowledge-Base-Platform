@@ -103,6 +103,7 @@ export function generatePurchaseOrder(
       lineItems.push({
         stt: stt++,
         productName: item.name,
+        specification: item.specification,  // Quy cách từ Master Data
         quantity,
         unit: item.unit,
         notes: item.status === 'not_found' ? 'Không tìm thấy trong tồn kho (QC/CALIB)' : 'QC/CALIB supplement'
