@@ -82,8 +82,9 @@ export const ProcessWarehouseRequestInput = z.object({
     .object({
       poNumber: z.string().optional(),
       department: z.string().optional(),
-      requestedBy: z.string().optional(),
+      requestedBy: z.string().optional().describe('Người đề nghị (mặc định: Thục Bình)'),
       approvedBy: z.string().optional(),
+      contentDescription: z.string().optional().describe('Nội dung yêu cầu (auto-generated if not provided)'),
       notes: z.string().optional()
     })
     .optional()
@@ -289,12 +290,20 @@ async function executeGeneratePO(
   const chemicalComparison = await compareChemicalsWithInventory(chemicalResult.requirements, inventoryBuffer);
   const supplementComparison = await compareSupplementsWithInventory(chemicalResult.supplements, inventoryBuffer);
 
-  // Generate PO
+  // Generate content description based on workflow parameters
+  const packageNameVi = input.servicePackage === 'gold' ? 'Vàng' :
+                        input.servicePackage === 'silver' ? 'Bạc' : 'Đồng';
+  const defaultContentDescription = `VTTH và Hóa chất cho đoàn ${input.numCustomers} KH - Gói ${packageNameVi}`;
+
+  // Generate PO with auto-generated content description
   const po = generatePurchaseOrder(
     vtthComparison,
     chemicalComparison,
     supplementComparison,
-    input.poMetadata || {}
+    {
+      ...input.poMetadata,
+      contentDescription: input.poMetadata?.contentDescription || defaultContentDescription
+    }
   );
 
   // Create Excel file using template (with fallback to simple generation)

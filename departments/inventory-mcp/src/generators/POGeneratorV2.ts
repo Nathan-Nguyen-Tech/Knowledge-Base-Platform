@@ -14,6 +14,7 @@ import { ChemicalComparison, SupplementComparison } from '../calculators/Invento
 export interface POLineItem {
   stt: number;  // STT (row number)
   productName: string;  // Tên sản phẩm
+  specification?: string;  // Quy cách (từ Master Data)
   quantity: number;  // Số lượng (large unit, integer)
   unit: string;  // Đơn vị (Hộp, Thùng, Túi, etc.)
   notes?: string;  // Ghi chú
@@ -24,10 +25,11 @@ export interface POLineItem {
  */
 export interface POMeta {
   poNumber: string;  // Số phiếu
-  department: string;  // Khoa/Phòng ban
+  department?: string;  // Khoa/Phòng ban (mặc định: Bộ phận Kho)
   createdDate: Date;  // Ngày lập
-  requestedBy?: string;  // Người yêu cầu
+  requestedBy?: string;  // Người yêu cầu (mặc định: Thục Bình)
   approvedBy?: string;  // Người duyệt
+  contentDescription?: string;  // Nội dung yêu cầu (e.g., "VTTH và Hóa chất cho đoàn 100 KH")
   notes?: string;  // Ghi chú chung
 }
 
@@ -67,6 +69,7 @@ export function generatePurchaseOrder(
       lineItems.push({
         stt: stt++,
         productName: item.productName,
+        specification: item.specification,
         quantity,
         unit: item.largeUnit,
         notes: item.status === 'not_found' ? 'Không tìm thấy trong tồn kho' : undefined
@@ -83,6 +86,7 @@ export function generatePurchaseOrder(
       lineItems.push({
         stt: stt++,
         productName: item.testName,
+        specification: item.specification,
         quantity,
         unit: item.purchaseUnit,
         notes: item.status === 'not_found' ? 'Không tìm thấy trong tồn kho' : undefined
@@ -111,10 +115,11 @@ export function generatePurchaseOrder(
 
   const poMeta: POMeta = {
     poNumber,
-    department: meta.department || 'Phòng Lab',
+    department: meta.department,  // Default handled by TemplatePOGenerator
     createdDate: meta.createdDate || new Date(),
     requestedBy: meta.requestedBy,
     approvedBy: meta.approvedBy,
+    contentDescription: meta.contentDescription,  // Pass through content description
     notes: meta.notes
   };
 

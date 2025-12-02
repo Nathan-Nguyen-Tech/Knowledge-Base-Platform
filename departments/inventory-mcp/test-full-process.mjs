@@ -3,6 +3,7 @@
  * Test case: 100 customers, basic package
  */
 
+import 'dotenv/config';
 import { processWarehouseRequest } from './build/tools/process-warehouse-request.js';
 import { OneDriveStorageAdapter, ServicePrincipalAuth, SqliteCache, PollingSync } from '@mcp/core';
 

@@ -11,6 +11,7 @@ import { VTTHItem, parseVTTHFromExcel } from '../models/VTTHItem.js';
  */
 export interface VTTHRequirement {
   productName: string;
+  specification?: string;  // Quy cách (từ Master Data)
   requiredSmallUnit: number;  // Số lượng cần (đơn vị nhỏ)
   purchaseQuantity: number;  // Số lượng mua (đơn vị lớn, làm tròn lên)
   largeUnit: string;  // Đơn vị lớn (Túi, Hộp, Chai)
@@ -56,6 +57,7 @@ export async function calculateVTTHRequirements(
 
     requirements.push({
       productName: item.data.name,
+      specification: item.data.specification,
       requiredSmallUnit,
       purchaseQuantity,
       largeUnit: item.data.largeUnit,

@@ -21,6 +21,7 @@ import {
  */
 export interface ChemicalRequirement {
   testName: string;
+  specification?: string;  // Quy cách (từ Master Data)
   chemicalType: string;
   customerTests: number;  // Số test khách hàng
   qcTests: number;  // Số test QC
@@ -98,6 +99,7 @@ export async function calculateChemicalRequirements(
 
     requirements.push({
       testName: chem.data.testName,
+      specification: chem.data.specification,
       chemicalType: chem.data.chemicalType,
       customerTests: numCustomers,
       qcTests: chem.data.qcTests,

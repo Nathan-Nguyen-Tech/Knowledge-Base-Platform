@@ -32,14 +32,23 @@ export interface TemplatePOOptions {
 const METADATA_MAPPING: Record<string, keyof POMeta | 'createdDateFormatted'> = {
   '{Ngaylap}': 'createdDateFormatted',
   '{Nguoidenghi}': 'requestedBy',
-  '{Bophan}': 'department'
+  '{Bophan}': 'department',
+  '{Noidungyeucau}': 'contentDescription'
+};
+
+/**
+ * Default values for metadata fields
+ */
+const METADATA_DEFAULTS: Record<string, string> = {
+  '{Nguoidenghi}': 'Thục Bình',
+  '{Bophan}': 'Bộ phận Kho'
 };
 
 const LINE_ITEM_MAPPING: Record<string, keyof POLineItem | 'specification'> = {
   '{Sothutu}': 'stt',
   '{Tensanpham}': 'productName',
   '{Quycach}': 'specification',
-  '{Soluongd}': 'quantity',
+  '{Soluong}': 'quantity',
   '{donvi}': 'unit'
 };
 
@@ -59,7 +68,23 @@ function parseTemplatePlaceholders(worksheet: ExcelJS.Worksheet): TemplateParseR
 
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-      const cellValue = String(cell.value || cell.text || '');
+      // Safely get cell value - handle null, undefined, and rich text
+      let cellValue = '';
+      try {
+        const rawValue = cell.value;
+        if (rawValue != null) {
+          // Handle rich text objects (ExcelJS returns { richText: [...] } for formatted text)
+          if (typeof rawValue === 'object' && 'richText' in rawValue) {
+            cellValue = (rawValue as { richText: Array<{ text: string }> }).richText
+              .map(r => r.text)
+              .join('');
+          } else {
+            cellValue = String(rawValue);
+          }
+        }
+      } catch {
+        cellValue = '';
+      }
       const matches = cellValue.match(placeholderRegex);
 
       if (matches) {
@@ -110,15 +135,28 @@ function replaceMetadataPlaceholders(
   // Format date as Vietnamese format
   const createdDateFormatted = meta.createdDate.toLocaleDateString('vi-VN');
 
+  // Build metadata values with defaults
   const metadataValues: Record<string, string> = {
     '{Ngaylap}': createdDateFormatted,
-    '{Nguoidenghi}': meta.requestedBy || '',
-    '{Bophan}': meta.department || ''
+    '{Nguoidenghi}': meta.requestedBy || METADATA_DEFAULTS['{Nguoidenghi}'],
+    '{Bophan}': meta.department || METADATA_DEFAULTS['{Bophan}'],
+    '{Noidungyeucau}': meta.contentDescription || ''
   };
 
   for (const [placeholder, location] of metadataCells) {
     const cell = worksheet.getCell(location.address);
-    const currentValue = String(cell.value || '');
+    // Safely get current value
+    let currentValue = '';
+    const rawValue = cell.value;
+    if (rawValue != null) {
+      if (typeof rawValue === 'object' && 'richText' in rawValue) {
+        currentValue = (rawValue as { richText: Array<{ text: string }> }).richText
+          .map(r => r.text)
+          .join('');
+      } else {
+        currentValue = String(rawValue);
+      }
+    }
     const newValue = currentValue.replace(placeholder, metadataValues[placeholder] || '');
     cell.value = newValue;
   }
@@ -145,8 +183,8 @@ function getLineItemValue(placeholder: string, item: POLineItem): string | numbe
     case '{Tensanpham}':
       return item.productName;
     case '{Quycach}':
-      return item.notes || ''; // Using notes for specification/quy cách
-    case '{Soluongd}':
+      return item.specification || ''; // Quy cách từ Master Data
+    case '{Soluong}':
       return item.quantity;
     case '{donvi}':
       return item.unit;
@@ -222,7 +260,17 @@ function populateLineItems(
     let hasPlaceholder = false;
 
     row.eachCell({ includeEmpty: false }, (cell) => {
-      const text = String(cell.value || '');
+      let text = '';
+      const rawValue = cell.value;
+      if (rawValue != null) {
+        if (typeof rawValue === 'object' && 'richText' in rawValue) {
+          text = (rawValue as { richText: Array<{ text: string }> }).richText
+            .map(r => r.text)
+            .join('');
+        } else {
+          text = String(rawValue);
+        }
+      }
       if (text.match(/\{[^}]+\}/)) {
         hasPlaceholder = true;
         cell.value = '';

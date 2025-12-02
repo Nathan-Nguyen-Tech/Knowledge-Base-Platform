@@ -19,6 +19,7 @@ export type ComparisonStatus = 'sufficient' | 'need_to_purchase' | 'not_found';
  */
 export interface VTTHComparison {
   productName: string;
+  specification?: string;  // Quy cách (từ Master Data)
   requiredSmallUnit: number;
   inventorySmallUnit: number;
   shortageSmallUnit: number;
@@ -35,6 +36,7 @@ export interface VTTHComparison {
  */
 export interface ChemicalComparison {
   testName: string;
+  specification?: string;  // Quy cách (từ Master Data)
   totalTests: number;
   containersNeeded: number;
   inventoryContainers: number;
@@ -142,6 +144,7 @@ export async function compareVTTHWithInventory(
 
       comparisons.push({
         productName: req.productName,
+        specification: req.specification,
         requiredSmallUnit: req.requiredSmallUnit,
         inventorySmallUnit,
         shortageSmallUnit,
@@ -156,6 +159,7 @@ export async function compareVTTHWithInventory(
       // Not found in inventory
       comparisons.push({
         productName: req.productName,
+        specification: req.specification,
         requiredSmallUnit: req.requiredSmallUnit,
         inventorySmallUnit: 0,
         shortageSmallUnit: req.requiredSmallUnit,
@@ -232,6 +236,7 @@ export async function compareChemicalsWithInventory(
 
       comparisons.push({
         testName: req.testName,
+        specification: req.specification,
         totalTests: req.totalTests,
         containersNeeded: req.containersNeeded,
         inventoryContainers,
@@ -247,6 +252,7 @@ export async function compareChemicalsWithInventory(
       // Not found
       comparisons.push({
         testName: req.testName,
+        specification: req.specification,
         totalTests: req.totalTests,
         containersNeeded: req.containersNeeded,
         inventoryContainers: 0,
